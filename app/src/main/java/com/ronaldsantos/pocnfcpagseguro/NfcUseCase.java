@@ -1,6 +1,7 @@
 package com.ronaldsantos.pocnfcpagseguro;
 
 import android.nfc.tech.MifareClassic;
+import android.util.Log;
 
 import br.com.uol.pagseguro.plugpagservice.wrapper.PlugPag;
 import br.com.uol.pagseguro.plugpagservice.wrapper.PlugPagNFCResult;
@@ -19,7 +20,7 @@ public class NfcUseCase {
         this.mPlugPag = plugPag;
     }
 
-    public Observable<Integer> writeNfc(String message){
+    public Observable<Integer> writeNfc(PlugPagSimpleNFCData cardData){
         return Observable.create(emitter -> {
             try {
                 int resultStartNfc = mPlugPag.startNFCCardDirectly();
@@ -30,7 +31,7 @@ public class NfcUseCase {
                 }
 
 
-                PlugPagNFCAuth auth = new PlugPagNFCAuth(PlugPagNearFieldCardData.ONLY_M, (byte) 28, MifareClassic.KEY_DEFAULT);
+                PlugPagNFCAuth auth = new PlugPagNFCAuth(PlugPagNearFieldCardData.ONLY_M, (byte) cardData.getSlot(), MifareClassic.KEY_DEFAULT);
                 int resultAuth = mPlugPag.authNFCCardDirectly(auth);
                 if (resultAuth != 1) {
                     emitter.onError(new PlugPagException("Erro na autenticação"));
@@ -38,10 +39,10 @@ public class NfcUseCase {
                     return;
                 }
 
-                byte[] bytes = Utils.convertString2Bytes(message);
-
-                PlugPagSimpleNFCData cardData = new PlugPagSimpleNFCData(PlugPagNearFieldCardData.ONLY_M, 28, MifareClassic.KEY_DEFAULT);
-                cardData.setValue(bytes);
+//                byte[] bytes = Utils.convertString2Bytes(message);
+//
+//                PlugPagSimpleNFCData cardData = new PlugPagSimpleNFCData(PlugPagNearFieldCardData.ONLY_M, NFCConstants.VALUE_BLOCK, MifareClassic.KEY_DEFAULT);
+//                cardData.setValue(bytes);
 
                 Integer result = (Integer) mPlugPag.writeToNFCCardDirectly(cardData);
 
@@ -61,7 +62,7 @@ public class NfcUseCase {
         });
     }
 
-    public Observable<PlugPagNFCResult> readNfc(){
+    public Observable<PlugPagNFCResult> readNfc(Integer block){
         return Observable.create(emitter -> {
             int resultStartNfc = mPlugPag.startNFCCardDirectly();
             if (resultStartNfc != 1){
@@ -71,7 +72,7 @@ public class NfcUseCase {
             }
 
 
-            PlugPagNFCAuth auth = new PlugPagNFCAuth(PlugPagNearFieldCardData.ONLY_M, (byte) 28, MifareClassic.KEY_DEFAULT);
+            PlugPagNFCAuth auth = new PlugPagNFCAuth(PlugPagNearFieldCardData.ONLY_M, block.byteValue(), MifareClassic.KEY_DEFAULT);
             int resultAuth = mPlugPag.authNFCCardDirectly(auth);
             if (resultAuth != 1){
                 emitter.onError(new PlugPagException("Erro na autenticação"));
@@ -80,13 +81,12 @@ public class NfcUseCase {
             }
 
 
-            PlugPagSimpleNFCData cardData = new PlugPagSimpleNFCData(PlugPagNearFieldCardData.ONLY_M, 28, MifareClassic.KEY_DEFAULT);
-//            cardData.setStartSlot(28);
-//            cardData.setEndSlot(28);
+            PlugPagSimpleNFCData cardData = new PlugPagSimpleNFCData(PlugPagNearFieldCardData.ONLY_M, block, MifareClassic.KEY_DEFAULT);
 
             PlugPagNFCResult result = mPlugPag.readNFCCardDirectly(cardData);
 
             if (result.getResult() == 1){
+                Log.d(NfcUseCase.class.getSimpleName(), Utils.convertBytes2String(result.getSlots()[result.getStartSlot()].get("data"), false));
                 emitter.onNext(result);
             } else {
                 emitter.onError(new PlugPagException("Ocoreu um erro ao ler o cartão nfc"));

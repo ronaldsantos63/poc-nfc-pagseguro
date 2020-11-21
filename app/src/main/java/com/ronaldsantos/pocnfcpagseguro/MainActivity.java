@@ -22,8 +22,16 @@ public class MainActivity extends AppCompatActivity implements MainContract.Main
     MaterialTextView txvResult;
 
     @SuppressLint("NonConstantResourceId")
-    @BindView(R.id.edt_data)
-    EditText edtData;
+    @BindView(R.id.edt_name)
+    EditText edtName;
+
+    @SuppressLint("NonConstantResourceId")
+    @BindView(R.id.edt_birthday)
+    EditText edtBirthday;
+
+    @SuppressLint("NonConstantResourceId")
+    @BindView(R.id.edt_address)
+    EditText edtAddress;
 
     private MainContract.MainPresenter presenter;
     private PlugPag mPlugPag;
@@ -59,7 +67,11 @@ public class MainActivity extends AppCompatActivity implements MainContract.Main
     @SuppressLint("NonConstantResourceId")
     @OnClick(R.id.btn_write_nfc)
     public void writeInNfc(View view){
-        presenter.writeNfc(edtData.getText().toString());
+        UserData userData = new UserData();
+        userData.setName(edtName.getText().toString());
+        userData.setBirthday(edtBirthday.getText().toString());
+        userData.setAddress(edtAddress.getText().toString());
+        presenter.writeNfc(userData);
     }
 
     @SuppressLint("NonConstantResourceId")
@@ -73,13 +85,19 @@ public class MainActivity extends AppCompatActivity implements MainContract.Main
     }
 
     @Override
-    public void onReadNfcSuccessful(String message) {
-        txvResult.setText(message);
+    public void onReadNfcSuccessful(UserData userData) {
+        edtName.setText(userData.getName());
+        edtBirthday.setText(userData.getBirthday());
+        edtAddress.setText(userData.getAddress());
+        txvResult.setText(R.string.on_read_nfc_successful_text);
     }
 
     @Override
     public void onWriteNfcSuccessful() {
         txvResult.setText(R.string.on_write_nfc_successful_text);
+        edtName.setText("");
+        edtBirthday.setText("");
+        edtAddress.setText("");
     }
 
     @Override
