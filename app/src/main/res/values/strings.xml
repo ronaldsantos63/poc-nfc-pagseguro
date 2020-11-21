@@ -1,0 +1,10 @@
+<resources>
+    <string name="app_name">POC NFC PagSeguro</string>
+    <string name="title_application">POC NFC Pagseguro</string>
+    <string name="edt_data_text_hint">Digite qualquer texto</string>
+    <string name="btn_write_nfc_text">Gravar Nfc</string>
+    <string name="btn_read_nfc_text">Ler Nfc</string>
+    <string name="on_write_nfc_successful_text">Gravado com sucesso</string>
+    <string name="on_started_nfc_text">NFc iniciado com sucesso</string>
+    <string name="on_stoped_nfc_text">Nfc parado com sucesso!</string>
+</resources>
