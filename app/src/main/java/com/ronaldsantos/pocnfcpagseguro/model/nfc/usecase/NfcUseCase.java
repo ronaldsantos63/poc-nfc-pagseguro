@@ -1,7 +1,15 @@
-package com.ronaldsantos.pocnfcpagseguro;
+package com.ronaldsantos.pocnfcpagseguro.model.nfc.usecase;
 
 import android.nfc.tech.MifareClassic;
 import android.util.Log;
+
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+
+import com.ronaldsantos.pocnfcpagseguro.helpers.Utils;
+
+import java.util.ArrayList;
+import java.util.List;
 
 import br.com.uol.pagseguro.plugpagservice.wrapper.PlugPag;
 import br.com.uol.pagseguro.plugpagservice.wrapper.PlugPagNFCResult;
@@ -11,6 +19,8 @@ import br.com.uol.pagseguro.plugpagservice.wrapper.data.request.PlugPagSimpleNFC
 import br.com.uol.pagseguro.plugpagservice.wrapper.exception.PlugPagException;
 import io.reactivex.Completable;
 import io.reactivex.Observable;
+import io.reactivex.ObservableEmitter;
+import io.reactivex.ObservableOnSubscribe;
 
 public class NfcUseCase {
 
@@ -34,22 +44,17 @@ public class NfcUseCase {
                 PlugPagNFCAuth auth = new PlugPagNFCAuth(PlugPagNearFieldCardData.ONLY_M, (byte) cardData.getSlot(), MifareClassic.KEY_DEFAULT);
                 int resultAuth = mPlugPag.authNFCCardDirectly(auth);
                 if (resultAuth != 1) {
-                    emitter.onError(new PlugPagException("Erro na autenticação"));
+                    emitter.onError(new PlugPagException(String.format("Erro ao autenticar bloco [ %s ]", cardData.getSlot())));
                     emitter.onComplete();
                     return;
                 }
 
-//                byte[] bytes = Utils.convertString2Bytes(message);
-//
-//                PlugPagSimpleNFCData cardData = new PlugPagSimpleNFCData(PlugPagNearFieldCardData.ONLY_M, NFCConstants.VALUE_BLOCK, MifareClassic.KEY_DEFAULT);
-//                cardData.setValue(bytes);
-
-                Integer result = (Integer) mPlugPag.writeToNFCCardDirectly(cardData);
+                Integer result = mPlugPag.writeToNFCCardDirectly(cardData);
 
                 if (result == 1) {
                     emitter.onNext(result);
                 } else {
-                    emitter.onError(new PlugPagException("Ocorreu um erro ao escrever no cartão nfc"));
+                    emitter.onError(new PlugPagException(String.format("Ocorreu um erro ao escrever no bloco [ %s ]  do cartão nfc", cardData.getSlot())));
                 }
 
                 mPlugPag.stopNFCCardDirectly();
@@ -75,7 +80,7 @@ public class NfcUseCase {
             PlugPagNFCAuth auth = new PlugPagNFCAuth(PlugPagNearFieldCardData.ONLY_M, block.byteValue(), MifareClassic.KEY_DEFAULT);
             int resultAuth = mPlugPag.authNFCCardDirectly(auth);
             if (resultAuth != 1){
-                emitter.onError(new PlugPagException("Erro na autenticação"));
+                emitter.onError(new PlugPagException(String.format("Erro ao autenticar bloco [ %s ]", block)));
                 emitter.onComplete();
                 return;
             }
@@ -89,7 +94,7 @@ public class NfcUseCase {
                 Log.d(NfcUseCase.class.getSimpleName(), Utils.convertBytes2String(result.getSlots()[result.getStartSlot()].get("data"), false));
                 emitter.onNext(result);
             } else {
-                emitter.onError(new PlugPagException("Ocoreu um erro ao ler o cartão nfc"));
+                emitter.onError(new PlugPagException(String.format("Ocoreu um erro ao ler bloco [ %s ] do cartão nfc", block)));
             }
             mPlugPag.stopNFCCardDirectly();
 
@@ -125,6 +130,69 @@ public class NfcUseCase {
 
     public Completable abort(){
         return Completable.create(emitter -> mPlugPag.abortNFC());
+    }
+
+    public Observable<Integer> clearBlocks(List<Integer> blocks){
+        return Observable.create((ObservableOnSubscribe<Integer>) emitter -> {
+            for (Integer trailerBlock : getSectorTrailerBlocks()){
+                if (blocks.contains(trailerBlock)){
+                    emitter.onError(new PlugPagException(String.format("O bloco [ %s ] é de permissão de acesso e não pode ser limpo!", trailerBlock)));
+                    emitter.onComplete();
+                    return;
+                }
+            }
+
+            for ( Integer block : blocks ){
+                emitter.onNext(block);
+            }
+
+            if (!emitter.isDisposed()){
+                emitter.onComplete();
+            }
+        })
+                .concatMap(block -> { // Using concatMap to ensure that observables are not called at the same time
+                    PlugPagSimpleNFCData emptyData = new PlugPagSimpleNFCData(PlugPagNearFieldCardData.ONLY_M, block, MifareClassic.KEY_DEFAULT);
+                    emptyData.setValue(new byte[16]);
+                    return writeNfc(emptyData);
+                });
+    }
+
+    public Observable<Integer> writePermissions(@NonNull byte[] keyA, @NonNull byte[] permissions, @Nullable byte[] keyB){
+        return Observable.create((ObservableOnSubscribe<Integer>) emitter -> {
+            for (Integer i : getSectorTrailerBlocks()){
+                emitter.onNext(i);
+            }
+
+            if (!emitter.isDisposed()){
+                emitter.onComplete();
+            }
+        })
+                .concatMap(sectorTrailerBlock -> {
+                    PlugPagSimpleNFCData cardData = new PlugPagSimpleNFCData(
+                            PlugPagNearFieldCardData.ONLY_M,
+                            sectorTrailerBlock,
+                            MifareClassic.KEY_DEFAULT);
+                    cardData.setValue(buildDataAccess(keyA, permissions, keyB));
+                    return writeNfc(cardData);
+                });
+    }
+
+    private List<Integer> getSectorTrailerBlocks(){
+        final List<Integer> ret = new ArrayList<>();
+        for (int i = 8; i < 65; i += 4){
+            ret.add(i);
+        }
+        return ret;
+    }
+
+    private byte[] buildDataAccess(@NonNull byte[] keyA, @NonNull byte[] permissions, @Nullable byte[] keyB){
+        byte[] data = new byte[16];
+        System.arraycopy(keyA, 0, data, 0, 6);
+        System.arraycopy(permissions, 0, data, 6, 4);
+        if (keyB != null){
+            System.arraycopy(keyB, 0, data, 10, 6);
+        }
+        return data;
     }
 
 }

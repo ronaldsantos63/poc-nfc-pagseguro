@@ -1,14 +1,23 @@
-package com.ronaldsantos.pocnfcpagseguro;
+package com.ronaldsantos.pocnfcpagseguro.view.main;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.fragment.app.FragmentTransaction;
 
 import android.annotation.SuppressLint;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.EditText;
+import android.widget.FrameLayout;
 import android.widget.Toast;
 
 import com.google.android.material.textview.MaterialTextView;
+import com.ronaldsantos.pocnfcpagseguro.R;
+import com.ronaldsantos.pocnfcpagseguro.managers.UserDataManager;
+import com.ronaldsantos.pocnfcpagseguro.model.user.UserData;
+import com.ronaldsantos.pocnfcpagseguro.model.user.usecase.GetUserUseCase;
+import com.ronaldsantos.pocnfcpagseguro.model.user.usecase.NewUserUseCase;
+import com.ronaldsantos.pocnfcpagseguro.nfc.NFCFragment;
+import com.ronaldsantos.pocnfcpagseguro.model.nfc.usecase.NfcUseCase;
 
 import br.com.uol.pagseguro.plugpagservice.wrapper.PlugPag;
 import butterknife.BindView;
@@ -33,16 +42,40 @@ public class MainActivity extends AppCompatActivity implements MainContract.Main
     @BindView(R.id.edt_address)
     EditText edtAddress;
 
+    @SuppressLint("NonConstantResourceId")
+    @BindView(R.id.edt_mother_name)
+    EditText edtMotherName;
+
+    @SuppressLint("NonConstantResourceId")
+    @BindView(R.id.edt_father_name)
+    EditText edtFatherName;
+
+    @SuppressLint("NonConstantResourceId")
+    @BindView(R.id.edt_cell_phone)
+    EditText edtCellPhone;
+
+    @BindView(R.id.frag_container)
+    FrameLayout fragContainer;
+
     private MainContract.MainPresenter presenter;
     private PlugPag mPlugPag;
     private NfcUseCase mNfcUseCase;
+    private UserDataManager mUserManager;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+
         ButterKnife.bind(this);
+
+        if (fragContainer.getVisibility() == View.VISIBLE) {
+            FragmentTransaction fragmentTransaction = getSupportFragmentManager().beginTransaction();
+            fragmentTransaction.add(R.id.frag_container, new NFCFragment());
+            fragmentTransaction.commitAllowingStateLoss();
+        }
+
         init();
     }
 
@@ -60,7 +93,13 @@ public class MainActivity extends AppCompatActivity implements MainContract.Main
     private void init(){
         mPlugPag = new PlugPag(this);
         mNfcUseCase = new NfcUseCase(mPlugPag);
-        presenter = new MainPresenterImpl(this, mNfcUseCase);
+
+        mUserManager = new UserDataManager(
+                new GetUserUseCase(mNfcUseCase),
+                new NewUserUseCase(mNfcUseCase)
+        );
+
+        presenter = new MainPresenterImpl(this, mNfcUseCase, mUserManager);
     }
 
 
@@ -71,6 +110,9 @@ public class MainActivity extends AppCompatActivity implements MainContract.Main
         userData.setName(edtName.getText().toString());
         userData.setBirthday(edtBirthday.getText().toString());
         userData.setAddress(edtAddress.getText().toString());
+        userData.setMotherName(edtMotherName.getText().toString());
+        userData.setFatherName(edtFatherName.getText().toString());
+        userData.setCellPhone(edtCellPhone.getText().toString());
         presenter.writeNfc(userData);
     }
 
@@ -78,6 +120,12 @@ public class MainActivity extends AppCompatActivity implements MainContract.Main
     @OnClick(R.id.btn_read_nfc)
     public void readFromNfc(View view){
         presenter.readNfc();
+    }
+
+    @SuppressLint("NonConstantResourceId")
+    @OnClick(R.id.btn_clear_blocks)
+    public void clearBlocks(View view){
+        presenter.clearBlocks();
     }
 
     private void showToast(String message){
@@ -89,6 +137,9 @@ public class MainActivity extends AppCompatActivity implements MainContract.Main
         edtName.setText(userData.getName());
         edtBirthday.setText(userData.getBirthday());
         edtAddress.setText(userData.getAddress());
+        edtMotherName.setText(userData.getMotherName());
+        edtFatherName.setText(userData.getFatherName());
+        edtCellPhone.setText(userData.getCellPhone());
         txvResult.setText(R.string.on_read_nfc_successful_text);
     }
 
@@ -98,6 +149,14 @@ public class MainActivity extends AppCompatActivity implements MainContract.Main
         edtName.setText("");
         edtBirthday.setText("");
         edtAddress.setText("");
+        edtMotherName.setText("");
+        edtFatherName.setText("");
+        edtCellPhone.setText("");
+    }
+
+    @Override
+    public void onBlockCleanSuccessful() {
+        txvResult.setText(R.string.on_block_clean_successful_text);
     }
 
     @Override

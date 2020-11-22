@@ -1,4 +1,4 @@
-package com.ronaldsantos.pocnfcpagseguro;
+package com.ronaldsantos.pocnfcpagseguro.helpers;
 
 import com.google.common.primitives.Ints;
 

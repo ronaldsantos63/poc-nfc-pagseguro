@@ -1,4 +1,4 @@
-package com.ronaldsantos.pocnfcpagseguro;
+package com.ronaldsantos.pocnfcpagseguro.model.nfc;
 
 import java.io.Serializable;
 import java.util.Objects;

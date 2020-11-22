@@ -10,4 +10,9 @@
     <string name="edt_birthday_text_hint">Qual sua data de aniversário?</string>
     <string name="edt_address_text_hint">Qual seu endereço?</string>
     <string name="on_read_nfc_successful_text">Lido com sucesso</string>
+    <string name="btn_clear_blocs_text">Limpar blocos</string>
+    <string name="on_block_clean_successful_text">Blocos limpos com sucesso!</string>
+    <string name="edt_mother_name_hint_text">Primeiro nome da sua mãe</string>
+    <string name="edt_father_name_hint_text">Qual o primeiro nome do seu pai</string>
+    <string name="edt_cell_phone_hint_text">Qual seu número de celular</string>
 </resources>
