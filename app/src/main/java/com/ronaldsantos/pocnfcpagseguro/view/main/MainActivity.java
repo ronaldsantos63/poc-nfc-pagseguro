@@ -1,8 +1,5 @@
 package com.ronaldsantos.pocnfcpagseguro.view.main;
 
-import androidx.appcompat.app.AppCompatActivity;
-import androidx.fragment.app.FragmentTransaction;
-
 import android.annotation.SuppressLint;
 import android.os.Bundle;
 import android.view.View;
@@ -10,14 +7,16 @@ import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.Toast;
 
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.fragment.app.FragmentTransaction;
+
 import com.google.android.material.textview.MaterialTextView;
 import com.ronaldsantos.pocnfcpagseguro.R;
 import com.ronaldsantos.pocnfcpagseguro.managers.UserDataManager;
+import com.ronaldsantos.pocnfcpagseguro.model.nfc.usecase.NfcUseCase;
 import com.ronaldsantos.pocnfcpagseguro.model.user.UserData;
 import com.ronaldsantos.pocnfcpagseguro.model.user.usecase.GetUserUseCase;
 import com.ronaldsantos.pocnfcpagseguro.model.user.usecase.NewUserUseCase;
-import com.ronaldsantos.pocnfcpagseguro.nfc.NFCFragment;
-import com.ronaldsantos.pocnfcpagseguro.model.nfc.usecase.NfcUseCase;
 
 import br.com.uol.pagseguro.plugpagservice.wrapper.PlugPag;
 import butterknife.BindView;
@@ -54,9 +53,6 @@ public class MainActivity extends AppCompatActivity implements MainContract.Main
     @BindView(R.id.edt_cell_phone)
     EditText edtCellPhone;
 
-    @BindView(R.id.frag_container)
-    FrameLayout fragContainer;
-
     private MainContract.MainPresenter presenter;
     private PlugPag mPlugPag;
     private NfcUseCase mNfcUseCase;
@@ -66,16 +62,7 @@ public class MainActivity extends AppCompatActivity implements MainContract.Main
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-
-
         ButterKnife.bind(this);
-
-        if (fragContainer.getVisibility() == View.VISIBLE) {
-            FragmentTransaction fragmentTransaction = getSupportFragmentManager().beginTransaction();
-            fragmentTransaction.add(R.id.frag_container, new NFCFragment());
-            fragmentTransaction.commitAllowingStateLoss();
-        }
-
         init();
     }
 

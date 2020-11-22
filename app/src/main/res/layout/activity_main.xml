@@ -7,16 +7,6 @@
     android:layout_margin="32dp"
     tools:context=".view.main.MainActivity">
 
-    <FrameLayout
-        android:id="@+id/frag_container"
-        android:layout_width="0dp"
-        android:layout_height="0dp"
-        android:visibility="gone"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintBottom_toBottomOf="parent"/>
-
     <ScrollView
         android:id="@+id/sv_content"
         android:layout_width="0dp"
