@@ -179,7 +179,7 @@ public class NfcUseCase {
 
     private List<Integer> getSectorTrailerBlocks(){
         final List<Integer> ret = new ArrayList<>();
-        for (int i = 8; i < 65; i += 4){
+        for (int i = 7; i < 64; i += 4){
             ret.add(i);
         }
         return ret;
